@@ -8,8 +8,20 @@ Rust CLI bridging the Keychron Launcher web app (WebHID, browser-only) to Keychr
 
 CLI-only. A GNOME/KDE panel widget may come later in a separate repo, driven by `list --json`.
 
-## Build
-This project is in alpha and **not ready for production use**, you need to build it yourself
+## Install
+
+This project is in alpha and **not ready for production use**.
+
+Download the latest release for your architecture from [Releases](https://github.com/santoja/keyLauncher/releases), verify the checksum, and install:
+
+```
+sha256sum -c keylauncher-x86_64-unknown-linux-gnu.tar.gz.sha256
+tar xzf keylauncher-x86_64-unknown-linux-gnu.tar.gz
+sudo install -m 755 keylauncher /usr/local/bin/
+```
+
+### Build from source
+
 ```
 cargo build --release
 ```
