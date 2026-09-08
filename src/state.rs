@@ -46,4 +46,33 @@ mod tests {
         state.set("abc", true);
         assert!(state.is_enabled("abc"));
     }
+
+    fn temp_path(name: &str) -> std::path::PathBuf {
+        std::env::temp_dir().join(format!("keylauncher-test-{}-{name}.json", std::process::id()))
+    }
+
+    #[test]
+    fn save_then_load_round_trips() {
+        let path = temp_path("roundtrip");
+        let mut state = StateFile::default();
+        state.set("abc", false);
+        state.save(&path).unwrap();
+        assert_eq!(StateFile::load(&path), state);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn load_missing_file_defaults() {
+        let path = temp_path("missing");
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(StateFile::load(&path), StateFile::default());
+    }
+
+    #[test]
+    fn load_invalid_json_defaults() {
+        let path = temp_path("invalid");
+        std::fs::write(&path, "not json").unwrap();
+        assert_eq!(StateFile::load(&path), StateFile::default());
+        let _ = std::fs::remove_file(&path);
+    }
 }

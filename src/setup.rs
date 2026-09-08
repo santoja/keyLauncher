@@ -46,17 +46,20 @@ fn add_user_to_group(user: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn install_udev_rule(exe: &Path) -> std::io::Result<()> {
-    let rule = format!(
+fn udev_rule_content(exe: &Path) -> String {
+    format!(
         "ACTION==\"add\", SUBSYSTEM==\"hidraw\", ATTRS{{idVendor}}==\"3434\", GROUP=\"{group}\", RUN+=\"{exe} __udev-apply $env{{DEVNAME}}\"\n",
         group = GROUP_NAME,
         exe = exe.display(),
-    );
-    std::fs::write(UDEV_RULE_PATH, rule)
+    )
 }
 
-fn install_polkit_policy(exe: &Path) -> std::io::Result<()> {
-    let policy = format!(
+fn install_udev_rule(exe: &Path) -> std::io::Result<()> {
+    std::fs::write(UDEV_RULE_PATH, udev_rule_content(exe))
+}
+
+fn polkit_policy_content(exe: &Path) -> String {
+    format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
@@ -74,8 +77,11 @@ fn install_polkit_policy(exe: &Path) -> std::io::Result<()> {
 </policyconfig>
 "#,
         exe = exe.display(),
-    );
-    std::fs::write(POLKIT_POLICY_PATH, policy)
+    )
+}
+
+fn install_polkit_policy(exe: &Path) -> std::io::Result<()> {
+    std::fs::write(POLKIT_POLICY_PATH, polkit_policy_content(exe))
 }
 
 fn ensure_state_file() -> std::io::Result<()> {
@@ -94,11 +100,7 @@ fn reload_udev() -> std::io::Result<()> {
         return Err(std::io::Error::other("udevadm control --reload-rules failed"));
     }
     let trigger = Command::new("udevadm")
-        .args([
-            "trigger",
-            "--subsystem-match=hidraw",
-            "--attr-match=idVendor=3434",
-        ])
+        .args(["trigger", "--subsystem-match=hidraw", "-p", "ID_VENDOR_ID=3434"])
         .status()?;
     if !trigger.success() {
         return Err(std::io::Error::other("udevadm trigger failed"));
@@ -120,4 +122,26 @@ pub fn run() -> std::io::Result<()> {
 
     println!("Setup complete. Log out and back in for the '{GROUP_NAME}' group membership to take effect.");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn udev_rule_content_targets_keychron_vid_and_group() {
+        let content = udev_rule_content(Path::new("/opt/keylauncher"));
+        assert!(content.contains("idVendor}==\"3434\""));
+        assert!(content.contains("GROUP=\"keylauncher\""));
+        assert!(content.contains("RUN+=\"/opt/keylauncher __udev-apply $env{DEVNAME}\""));
+    }
+
+    #[test]
+    fn polkit_policy_content_has_action_id_and_exec_path() {
+        let content = polkit_policy_content(Path::new("/opt/keylauncher"));
+        assert!(content.contains(r#"<action id="io.github.santoja.keylauncher.manage">"#));
+        assert!(content.contains(
+            r#"<annotate key="org.freedesktop.policykit.exec.path">/opt/keylauncher</annotate>"#
+        ));
+    }
 }

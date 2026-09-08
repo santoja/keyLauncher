@@ -185,4 +185,30 @@ mod tests {
         assert_ne!(a, c);
         assert!(a.starts_with("noserial-3434-0123-"));
     }
+
+    fn fixture_root(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("keylauncher-test-{}-{name}", std::process::id()))
+    }
+
+    #[test]
+    fn find_usb_device_dir_walks_up_to_id_vendor() {
+        let root = fixture_root("finds");
+        let usb_dir = root.join("usbdev1");
+        let hidraw_dir = usb_dir.join("hidraw").join("0003:1234:5678.0001");
+        std::fs::create_dir_all(&hidraw_dir).unwrap();
+        std::fs::write(usb_dir.join("idVendor"), "3434\n").unwrap();
+
+        assert_eq!(find_usb_device_dir(&hidraw_dir), Some(usb_dir));
+        std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn find_usb_device_dir_none_when_absent() {
+        let root = fixture_root("absent");
+        let leaf = root.join("a").join("b");
+        std::fs::create_dir_all(&leaf).unwrap();
+
+        assert_eq!(find_usb_device_dir(&leaf), None);
+        std::fs::remove_dir_all(&root).unwrap();
+    }
 }
