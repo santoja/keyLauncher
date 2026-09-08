@@ -77,7 +77,7 @@ fn elevate_and_run(privileged_args: &[&str]) -> std::io::Result<()> {
         // Already root: dispatch directly without a second pkexec prompt.
         return match privileged_args {
             ["__privileged", "set-state", id, enabled] => {
-                cmd_set_state(id, enabled.parse().unwrap_or(true))
+                cmd_set_state(id, enabled.parse().unwrap_or(false))
             }
             ["__privileged", "setup"] => setup::run(),
             _ => unreachable!(),
@@ -154,19 +154,21 @@ fn cmd_list(json: bool) -> std::io::Result<()> {
 
 fn cmd_set_state(id: &str, enabled: bool) -> std::io::Result<()> {
     require_setup_done()?;
-    let state_path = Path::new(STATE_FILE);
-    let mut state = StateFile::load(state_path);
-    state.set(id, enabled);
-    state.save(state_path)?;
 
-    // Apply immediately to any currently-attached nodes for this id, no replug needed.
+    // Apply to any currently-attached nodes for this id first, no replug needed;
+    // only persist state once every node succeeded, so a mid-toggle failure
+    // (e.g. unplug race) doesn't desync state.json from the live permission bits.
     let devices = group_devices(scan_hidraw()?);
     if let Some(device) = devices.iter().find(|d| d.id == id) {
         for node in &device.hidraw_nodes {
             apply_permission(Path::new(node), enabled)?;
         }
     }
-    Ok(())
+
+    let state_path = Path::new(STATE_FILE);
+    let mut state = StateFile::load(state_path);
+    state.set(id, enabled);
+    state.save(state_path)
 }
 
 fn cmd_udev_apply(devnode: &str) -> std::io::Result<()> {
