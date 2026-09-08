@@ -12,6 +12,10 @@ After finishing a task, update this file IF something you learned would change h
 
 This is CLI-only. A GNOME/KDE panel widget is a planned future phase, likely in a separate repo, that will drive this CLI (`list --json` is the intended integration point). Do not add GUI/panel code here unless asked.
 
+## Release pipeline
+
+Commits merged to `main` must be **Conventional Commits** (`feat:`, `fix:`, `chore:`, `feat!:` for breaking, etc.) — `.github/workflows/commitlint.yml` enforces this on PRs. `.github/workflows/release.yml` runs `release-please` on every push to `main`; it bumps `Cargo.toml`'s version and `CHANGELOG.md` from those commits and opens/updates a release PR. Merging that PR is what actually cuts a release — the same workflow then cross-compiles `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu` binaries (no `cross`/Docker needed — verified zero `-sys`/native crates in the dependency tree) and uploads `tar.gz` + `sha256` pairs to the GitHub Release. No musl targets (glibc is assumed present, matches the Fedora-first audience). See `release-please-config.json` / `.release-please-manifest.json` for config.
+
 ## Commands
 
 ```
