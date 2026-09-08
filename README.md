@@ -1,6 +1,6 @@
 # keylauncher
 
-Rust CLI bridging the Keychron Launcher web app (WebHID, browser-only) to Keychron keyboards on Linux. Replaces the manual udev-rule approach from [this gist](https://gist.github.com/K0SS4/668c2f1e2dc8f8e704a679974a340bc6) with a managed setup, plus a per-device enable/disable toggle that actually revokes OS-level access (not just a UI flag).
+Rust CLI bridging the Keychron Launcher web app (WebHID, browser-only) to Keychron keyboards on Linux. Based on the manual udev-rule approach from [this gist](https://gist.github.com/K0SS4/668c2f1e2dc8f8e704a679974a340bc6), replaced with a managed setup, plus a per-device enable/disable toggle that actually revokes OS-level access (not just a UI flag).
 
 > **Unofficial project.** Not affiliated with, endorsed by, or connected to Keychron in any way.
 
@@ -26,6 +26,16 @@ keylauncher disable <id>      # privileged, self-elevates via pkexec
 Run `keylauncher setup` once after install. It adds you to a `keylauncher` group and installs the udev/polkit rules needed for `enable`/`disable` to work — log out/in afterward for the group change to take effect. `enable`/`disable`/`setup` will self-elevate through `pkexec` (a graphical auth prompt) if not already run as root.
 
 `list` never needs root — it reads live device permission bits directly.
+
+## Firmware updates
+
+Flashing keyboard firmware needs `dfu-util`:
+
+```
+sudo dnf install dfu-util       # Fedora
+sudo apt install dfu-util       # Debian/Ubuntu
+sudo pacman -S dfu-util         # Arch
+```
 
 ## How it works
 
