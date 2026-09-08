@@ -4,6 +4,8 @@ Rust CLI bridging the Keychron Launcher web app (WebHID, browser-only) to Keychr
 
 > **Unofficial project.** Not affiliated with, endorsed by, or connected to Keychron in any way.
 
+> **Browser support.** Tested on Chrome-based browsers only. Firefox doesn't work — Keychron Launcher limitation, not this tool's.
+
 CLI-only. A GNOME/KDE panel widget may come later in a separate repo, driven by `list --json`.
 
 ## Build

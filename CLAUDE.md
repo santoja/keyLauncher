@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Maintenance
+
+After finishing a task, update this file IF something you learned would change how a future session approaches this codebase (a gotcha, a fixed bug's root cause, a new limitation). Skip the update if nothing durable changed.
+
 ## What this is
 
 `keylauncher` is a Rust CLI that bridges the Keychron Launcher web app (which talks to keyboards over WebHID in the browser) to Keychron keyboards on Linux. It replaces the manual udev-rule approach from https://gist.github.com/K0SS4/668c2f1e2dc8f8e704a679974a340bc6 with a managed setup, and adds a per-device enable/disable toggle that actually revokes OS-level access (not just a UI flag).
@@ -63,4 +67,5 @@ Four modules, each with one job:
 
 - Revoking a device's permission bits blocks *future* `open()` calls but cannot close a file descriptor the browser already has open from before the `disable` — killing the browser process is out of scope.
 - No file locking on `state.json` — fine for a single-user desktop tool; would need `flock` if this ever became multi-writer.
-- Group membership changes (`usermod -aG`) only take effect on the user's next login session; `setup` prints this but can't force it.
+- Group membership changes (`usermod -aG`) only take effect on the user's next login session; `setup` prints this but can't force it. **Restarting the browser is not enough** — group list is fixed at login (PAM), inherited by every process forked in that session including a freshly-relaunched browser. Check `grep Groups /proc/<pid>/status` on the browser process to confirm; if the new gid is missing, only a full logout/login or reboot fixes it.
+- `reload_udev()` in `src/setup.rs` uses `udevadm trigger --subsystem-match=hidraw -p ID_VENDOR_ID=3434` (property-match), not `--attr-match=idVendor=3434`. `--attr-match` only checks the hidraw device's own sysfs attributes; `idVendor` lives on the ancestor USB device, so `--attr-match` silently matches zero devices — any Keychron already plugged in when `setup` runs never gets its `GROUP=` corrected (stays `root:root`, mode bits still get patched by `enable`/`disable` since those bypass udev, but group ownership doesn't, making the mode bits useless). Verify a trigger filter actually matches with `udevadm trigger --dry-run <same args>` before trusting it.
