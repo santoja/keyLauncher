@@ -37,6 +37,8 @@ sudo apt install dfu-util       # Debian/Ubuntu
 sudo pacman -S dfu-util         # Arch
 ```
 
+> **Not recommended.** Firmware update worked for us, but the Keychron Launcher website gave no indication when the flash actually finished. Proceed at your own risk.
+
 ## How it works
 
 A udev rule grants a `keylauncher` group hidraw access to Keychron devices (USB VID `0x3434`) and re-applies saved state on every plug-in, so a `disable` survives unplug/replug instead of reverting. `enable`/`disable` are gated behind a polkit policy and flip actual file-mode permission bits on `/dev/hidrawN`, so a disabled keyboard is genuinely unreachable by the browser, not just hidden in a UI. See `CLAUDE.md` for full architecture details.
